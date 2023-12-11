@@ -22,9 +22,14 @@
     /** You will need to implement your search and 
      * return the appropriate object here. */
 
+    var matched = scannedTextObj.Content.filter((content_entry) => {
+        var entry_text = content_entry.Text
+        return str.includes(searchTerm)
+    })
+
     var result = {
-        "SearchTerm": "",
-        "Results": []
+        "SearchTerm": searchTerm,
+        "Results": matched
     };
     
     return result; 
