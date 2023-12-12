@@ -21,15 +21,31 @@
  function findSearchTermInBooks(searchTerm, scannedTextObj) {
     /** You will need to implement your search and 
      * return the appropriate object here. */
+    var all_results = []
 
-    var matched = scannedTextObj.Content.filter((content_entry) => {
-        var entry_text = content_entry.Text
-        return str.includes(searchTerm)
-    })
+    scannedTextObj.forEach((book) => {
+        var book_isbn = book.ISBN
+        var book_content = book.Content
+        //For each book, examine it's content
+        //Only keep content entries which contain a substring of the searchTerm
+        var matched_entries = book_content.filter((content_entry) => {
+            var entry_text = content_entry.Text
+            return entry_text.includes(searchTerm)
+        })
+
+        //Take all matched content entries' page and line, and combine it in one object with the book ISBN
+        matched_entries.forEach((match) => {
+            all_results.push({
+                "ISBN": book_isbn,
+                "Page": match.Page,
+                "Line": match.Line
+            })
+        })
+    });
 
     var result = {
         "SearchTerm": searchTerm,
-        "Results": matched
+        "Results": all_results
     };
     
     return result; 
@@ -87,6 +103,330 @@ const twentyLeaguesOut = {
  * 
  * Please add your unit tests below.
  * */
+
+/**
+ * General testing function which compares the inputted testInput object to the expectedOutput object.
+ * @param {string} testName - The name of the test to be displayed in the console.
+ * @param {JSON} testInput - A JSON object representing the input text.
+ * @param {JSON} expectedOutput - A JSON object representing the expected output.
+ * @param {string} searchTerm - The term to be searched.
+ * @returns - Prints PASS or FAIL in console.
+ * */ 
+function testEquality(testName, testInput, expectedOutput, searchTerm) {
+    const actualOutput = findSearchTermInBooks(searchTerm, testInput);
+    if(JSON.stringify(actualOutput) === JSON.stringify(expectedOutput)) {
+        console.log("PASS: " + testName);
+    }
+    else {
+        console.log("FAIL: " + testName);
+        console.log("Expected:", expectedOutput);
+        console.log("Received:", actualOutput);
+    }
+}
+
+/** No Books -> Empty Output */
+const noBookExpected = {
+    "SearchTerm": "the",
+    "Results": []
+}
+testEquality("No Book", [], noBookExpected, "the");
+
+/** 1 Book, no scanned content -> Empty Output */
+const oneBookNo = [
+    {
+        "Title": "Twenty Thousand Leagues Under the Sea",
+        "ISBN": "9780000528531",
+        "Content": [] 
+    }
+]
+const oneBookNoExpected = {
+    "SearchTerm": "the",
+    "Results": []
+}
+testEquality("One book, no content", oneBookNo, oneBookNoExpected, "the");
+
+/**1 Book, one match*/
+const oneBookOne = [
+    {
+        "Title": "A",
+        "ISBN": "123",
+        "Content": [
+            {
+                "Page": 1,
+                "Line": 1,
+                "Text": "the"
+            }
+        ] 
+    }
+]
+const oneBookOneExpected = {
+    "SearchTerm": "the",
+    "Results": [
+        {
+            "ISBN": "123",
+            "Page": 1,
+            "Line": 1
+        }
+    ]
+}
+testEquality("One book, one match", oneBookOne, oneBookOneExpected, "the");
+
+/**1 Book, many matches*/
+const oneBookMany = [
+    {
+        "Title": "A",
+        "ISBN": "123",
+        "Content": [
+            {
+                "Page": 1,
+                "Line": 1,
+                "Text": "the"
+            },
+            {
+                "Page": 2,
+                "Line": 2,
+                "Text": "the"
+            },
+            {
+                "Page": 3,
+                "Line": 3,
+                "Text": "the"
+            },
+            {
+                "Page": 4,
+                "Line": 4,
+                "Text": "the"
+            }
+        ] 
+    }
+]
+const oneBookManyExpected = {
+    "SearchTerm": "the",
+    "Results": [
+        {
+            "ISBN": "123",
+            "Page": 1,
+            "Line": 1
+        },
+        {
+            "ISBN": "123",
+            "Page": 2,
+            "Line": 2
+        },
+        {
+            "ISBN": "123",
+            "Page": 3,
+            "Line": 3
+        },
+        {
+            "ISBN": "123",
+            "Page": 4,
+            "Line": 4
+        }
+    ]
+}
+testEquality("One book, many matches", oneBookMany, oneBookManyExpected, "the");
+
+/** Multiple Books no matches*/
+const manyBooksNo = [
+    {
+        "Title": "Twenty Thousand Leagues Under the Sea",
+        "ISBN": "9780000528531",
+        "Content": [] 
+    },
+    {
+        "Title": "Twenty Thousand Leagues Under the Sea",
+        "ISBN": "9780000528531",
+        "Content": [] 
+    },
+    {
+        "Title": "Twenty Thousand Leagues Under the Sea",
+        "ISBN": "9780000528531",
+        "Content": [] 
+    },
+    {
+        "Title": "Twenty Thousand Leagues Under the Sea",
+        "ISBN": "9780000528531",
+        "Content": [] 
+    }
+]
+const manyBooksNoExpected = {
+    "SearchTerm": "the",
+    "Results": []
+}
+testEquality("Many books, no content", manyBooksNo, manyBooksNoExpected, "the");
+
+/** Multiple Books, many matches in one book */
+const manyMatchOneBook = [
+    {
+        "Title": "A",
+        "ISBN": "1",
+        "Content": [
+            {
+                "Page": 1,
+                "Line": 1,
+                "Text": "the"
+            },
+            {
+                "Page": 2,
+                "Line": 2,
+                "Text": "the"
+            },
+            {
+                "Page": 3,
+                "Line": 3,
+                "Text": "the"
+            },
+            {
+                "Page": 4,
+                "Line": 4,
+                "Text": "the"
+            },
+        ] 
+    },
+    {
+        "Title": "B",
+        "ISBN": "2",
+        "Content": [
+            {
+                "Page": 1,
+                "Line": 1,
+                "Text": ""
+            }
+        ] 
+    }
+]
+const manyMatchOneBookExpected = {
+    "SearchTerm": "the",
+    "Results": [
+        {
+            "ISBN": "1",
+            "Page": 1,
+            "Line": 1
+        },
+        {
+            "ISBN": "1",
+            "Page": 2,
+            "Line": 2
+        },
+        {
+            "ISBN": "1",
+            "Page": 3,
+            "Line": 3
+        },
+        {
+            "ISBN": "1",
+            "Page": 4,
+            "Line": 4
+        }
+    ]
+}
+testEquality("Many Books, many matches in one book", manyMatchOneBook, manyMatchOneBookExpected, "the");
+
+/** Multiple Books, many matches across books */
+const manyMatchBooks = [
+    {
+        "Title": "A",
+        "ISBN": "1",
+        "Content": [
+            {
+                "Page": 1,
+                "Line": 1,
+                "Text": "the"
+            }
+        ] 
+    },
+    {
+        "Title": "B",
+        "ISBN": "2",
+        "Content": [
+            {
+                "Page": 1,
+                "Line": 1,
+                "Text": "the"
+            }
+        ] 
+    },
+    {
+        "Title": "C",
+        "ISBN": "3",
+        "Content": [
+            {
+                "Page": 1,
+                "Line": 1,
+                "Text": "the"
+            }
+        ] 
+    },
+    {
+        "Title": "D",
+        "ISBN": "4",
+        "Content": [
+            {
+                "Page": 1,
+                "Line": 1,
+                "Text": "the"
+            }
+        ] 
+    }
+]
+const manyMatchBooksExpected = {
+    "SearchTerm": "the",
+    "Results": [
+        {
+            "ISBN": "1",
+            "Page": 1,
+            "Line": 1
+        },
+        {
+            "ISBN": "2",
+            "Page": 1,
+            "Line": 1
+        },
+        {
+            "ISBN": "3",
+            "Page": 1,
+            "Line": 1
+        },
+        {
+            "ISBN": "4",
+            "Page": 1,
+            "Line": 1
+        }
+    ]
+}
+testEquality("Many books, many matches across books", manyMatchBooks, manyMatchBooksExpected, "the");
+
+/**Case Sensitivity*/
+const caseSens = [
+    {
+        "Title": "A",
+        "ISBN": "123",
+        "Content": [
+            {
+                "Page": 1,
+                "Line": 1,
+                "Text": "thE tHe The THE t_he t he"
+            },
+            {
+                "Page": 2,
+                "Line": 2,
+                "Text": "the"
+            }
+        ] 
+    }
+]
+const caseSensExpected = {
+    "SearchTerm": "the",
+    "Results": [
+        {
+            "ISBN": "123",
+            "Page": 2,
+            "Line": 2
+        }
+    ]
+}
+testEquality("Case Sensitivity", caseSens, caseSensExpected, "the");
 
 /** We can check that, given a known input, we get a known output. */
 const test1result = findSearchTermInBooks("the", twentyLeaguesIn);
